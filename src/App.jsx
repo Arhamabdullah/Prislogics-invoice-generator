@@ -2225,7 +2225,7 @@ export default function App() {
                 <td style={{ padding: "12px 10px" }}>{inv.clientName}</td>
                 <td style={{ padding: "12px 10px" }}>{inv.invoiceNumber}</td>
                 <td style={{ padding: "12px 10px" }}>{inv.brand?.replace(".png", "").toUpperCase()}</td>
-                <td style={{ padding: "12px 10px" }}>${inv.total}</td>
+                <td style={{ padding: "12px 10px" }}>{inv.total}</td>
 
                 {/* ✅ GENERATED DATE COLUMN */}
                 <td style={{ padding: "12px 10px" }}>
