@@ -49,6 +49,17 @@ Sort code: 60-84-64 (Use when sending from UK)
 IBAN: GB96TRWI60846423557501
 Swift/BIC: TRWIGB2LXXX`,
   },
+  {
+    label: "Oxford Book Publishing Limited",
+    value: "Wise Payments Limited",
+    details: `Name: Oxford Book Publishing Limited
+Account number: 57057435
+Sort code: 60-84-64 (For UK transfers)
+IBAN: GB09 TRWI 6084 6457 0574 35
+Swift/BIC: TRWIGB2LXXX`,
+  },
+  
+  
 ];
 
 const LETTERHEADS = [
