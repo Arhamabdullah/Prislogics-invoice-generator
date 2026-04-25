@@ -1878,7 +1878,7 @@ const BANK_OPTIONS = [
   { label: "UK - Book Writing Inn LTD (Lloyds)", value: "uk-lloyds", details: `Account Name: Book Writing Inn LTD\nAccount Number: 28662160\nSort Code: 30-54-66\nIBAN: GB25LOYD30546628662160\nBIC: LOYDGB21F95` },
   { label: "USA - Book Writing Inn Ltd (Wise US)", value: "usa-wise", details: `Account Name: Book Writing Inn Ltd\nAccount Number: 213496653898\nAccount Type: Checking\nRouting Number: _LOOK_UP_\nSWIFT/BIC: TRWIUS35XXX` },
   { label: "UAE/International - Book Writing Inn Ltd (Wise GB)", value: "uae-wise-gb", details: `Account Name: Book Writing Inn Ltd\nIBAN: GB49TRWI23080115134001\nSWIFT/BIC: TRWIGB2LXXX` },
-  { label: "Oxford Book Publishing Limited Karachi", value: "Oxford-wise-gb", details: ` Account Name: Oxford Book Publishing Limited\nSort Code: 60-84-64\nIBAN: GB09TRWI60846457057435\nSWIFT/BIC: TRWIGB2LXXX` },
+  { label: "Oxford Book Publishing Limited Karachi", value: "Oxford-wise-gb", details:`Account Name: Oxford Book Publishing Limited\nSort Code: 60-84-64\nIBAN: GB09TRWI60846457057435\nSWIFT/BIC: TRWIGB2LXXX` },
   { label: "Point Brand Inc Limited (Wise UK)", value: "pointbrand", details: `Name: Point Brand Inc Limited\nAccount number: 23557501\nSort code: 60-84-64 (Use when sending from UK)\nIBAN: GB96TRWI60846423557501\nSwift/BIC: TRWIGB2BXXX` },
   { label: "Add Custom Bank", value: "custom", details: "" },
 ];
