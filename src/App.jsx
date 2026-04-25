@@ -1868,9 +1868,9 @@ function formatInvoiceNumber(num, brand) {
 }
 
 const GENERATED_BY_OPTIONS = [
-  "Syed Ali Abbas", "Anas Arif", "Arhum Naveed", "Yahya Sohail", "Atyab Kazmi",
-  "Raniya Lateef", "Ahmer Altaf", "Faran Shahid", "Fahad Abbasi", "Wasay Ali",
-  "Ayesha Khan", "Laraib Javaid", "Waqas Awan", "Basit Qureshi", "Syed Arham Abdullah"
+  "Syed Ali Abbas", "Anas Arif","Yahya Sohail", 
+   "Faran Shahid", "Wasay Ali",
+  "Zia Khan", "Laraib Javaid", "Waqas Awan", "Basit Qureshi", "Syed Arham Abdullah"
 ];
 
 const BANK_OPTIONS = [
@@ -1878,6 +1878,7 @@ const BANK_OPTIONS = [
   { label: "UK - Book Writing Inn LTD (Lloyds)", value: "uk-lloyds", details: `Account Name: Book Writing Inn LTD\nAccount Number: 28662160\nSort Code: 30-54-66\nIBAN: GB25LOYD30546628662160\nBIC: LOYDGB21F95` },
   { label: "USA - Book Writing Inn Ltd (Wise US)", value: "usa-wise", details: `Account Name: Book Writing Inn Ltd\nAccount Number: 213496653898\nAccount Type: Checking\nRouting Number: _LOOK_UP_\nSWIFT/BIC: TRWIUS35XXX` },
   { label: "UAE/International - Book Writing Inn Ltd (Wise GB)", value: "uae-wise-gb", details: `Account Name: Book Writing Inn Ltd\nIBAN: GB49TRWI23080115134001\nSWIFT/BIC: TRWIGB2LXXX` },
+  { label: "Oxford Book Publishing Limited Karachi", value: "Oxford-wise-gb", details: ` Account Name: Oxford Book Publishing Limited\nSort Code: 60-84-64\nIBAN: GB09TRWI60846457057435\nSWIFT/BIC: TRWIGB2LXXX` },
   { label: "Point Brand Inc Limited (Wise UK)", value: "pointbrand", details: `Name: Point Brand Inc Limited\nAccount number: 23557501\nSort code: 60-84-64 (Use when sending from UK)\nIBAN: GB96TRWI60846423557501\nSwift/BIC: TRWIGB2BXXX` },
   { label: "Add Custom Bank", value: "custom", details: "" },
 ];
@@ -1886,7 +1887,7 @@ const LETTERHEADS = [
   { value: "bwi-uae.png", label: "BWI UAE" },
   { value: "bwi-uk.png", label: "BWI UK" },
   { value: "expert.png", label: "Expert" },
-  { value: "oxford.png", label: "Oxford" },
+  { value: "oxfordupdate.png", label: "Oxford" },
   { value: "pointbrand.png", label: "Point Brand" },
   { value: "slade.png", label: "Slade" },
 ];
