@@ -1854,12 +1854,11 @@ import { db } from "./firebase";
 import { PDFDocument } from "pdf-lib";
 
 const BRAND_PREFIXES = {
-  "bwi-uae.png": "BWI-INV-UAE",
-  "bwi-uk.png": "BWI-INV-UK",
-  "expert.png": "EXP-INV-UK",
+  "bwig-uae.png": "BWI-INV-UAE",
+  "bwig-uk.png": "BWI-INV-UK",
+  "prislogics.jpg": "PRI-INV-UAE",
   "oxford.png": "OXF-INV-UK",
-  "pointbrand.png": "PBI-INV-UK",
-  "slade.png": "SLA-INV-UK"
+  "prislogics-bwig.png": "PBW-INV-UAE"
 };
 
 function formatInvoiceNumber(num, brand) {
@@ -1877,19 +1876,18 @@ const BANK_OPTIONS = [
   { label: "UAE - Prislogics Marketing (Wio Bank)", value: "uae-prislogics", details: `Account holder: PRISLOGICS MARKETING MANAGEMENT L.L.C S.O.C\nAccount number: 9307520214\nIBAN: AE220860000009307520214\nBIC: WIOBAEADXXX` },
   { label: "UK - Book Writing Inn LTD (Lloyds)", value: "uk-lloyds", details: `Account Name: Book Writing Inn LTD\nAccount Number: 28662160\nSort Code: 30-54-66\nIBAN: GB25LOYD30546628662160\nBIC: LOYDGB21F95` },
   { label: "USA - Book Writing Inn Ltd (Wise US)", value: "usa-wise", details: `Account Name: Book Writing Inn Ltd\nAccount Number: 213496653898\nAccount Type: Checking\nRouting Number: _LOOK_UP_\nSWIFT/BIC: TRWIUS35XXX` },
-  { label: "UAE/International - Book Writing Inn Ltd (Wise GB)", value: "uae-wise-gb", details: `Account Name: Book Writing Inn Ltd\nIBAN: GB49TRWI23080115134001\nSWIFT/BIC: TRWIGB2LXXX` },
+  { label: "Book Writing Inn Global Ltd (UK & International)", value: "bwig-global-wise", details: `Name: Book Writing Inn Global Ltd\nAccount number: 15134001\nSort code: 23-08-01\nUse when sending money from the UK\nIBAN: GB49 TRWI 2308 0115 1340 01\nSwift/BIC: TRWIGB2LXXX\nUse when sending money from outside the UK` },
   { label: "Oxford Book Publishing Limited Karachi", value: "Oxford-wise-gb", details:`Account Name: Oxford Book Publishing Limited\nSort Code: 60-84-64\nIBAN: GB09TRWI60846457057435\nSWIFT/BIC: TRWIGB2LXXX` },
   { label: "Point Brand Inc Limited (Wise UK)", value: "pointbrand", details: `Name: Point Brand Inc Limited\nAccount number: 23557501\nSort code: 60-84-64 (Use when sending from UK)\nIBAN: GB96TRWI60846423557501\nSwift/BIC: TRWIGB2BXXX` },
   { label: "Add Custom Bank", value: "custom", details: "" },
 ];
 
 const LETTERHEADS = [
-  { value: "bwi-uae.png", label: "BWI UAE" },
-  { value: "bwi-uk.png", label: "BWI UK" },
-  { value: "expert.png", label: "Expert" },
-  { value: "oxfordupdate.png", label: "Oxford" },
-  { value: "pointbrand.png", label: "Point Brand" },
-  { value: "slade.png", label: "Slade" },
+  { value: "bwig-uae.png", label: "Book Writing Inn Global — UAE" },
+  { value: "bwig-uk.png", label: "Book Writing Inn Global — UK" },
+  { value: "prislogics.jpg", label: "Prislogics — Dubai & Karachi" },
+  { value: "oxford.png", label: "Oxford Book Publishing" },
+  { value: "prislogics-bwig.png", label: "Prislogics × Book Writing Inn Global" },
 ];
 
 const inputStyle = {
@@ -1922,7 +1920,7 @@ export default function App() {
   const [description, setDescription] = useState("");
   const [items, setItems] = useState([{ desc: "", amt: "" }]);
   const [invoiceCounter, setInvoiceCounter] = useState(2);
-  const [selectedLetterhead, setSelectedLetterhead] = useState("slade.png");
+  const [selectedLetterhead, setSelectedLetterhead] = useState("bwig-uk.png");
   const [selectedBank, setSelectedBank] = useState(BANK_OPTIONS[0].value);
   const [generatedBy, setGeneratedBy] = useState(GENERATED_BY_OPTIONS[0]);
   const [customBank, setCustomBank] = useState({ holder: "", accountNumber: "", bankName: "", iban: "", swift: "" });
@@ -2280,10 +2278,10 @@ export default function App() {
 }}>
 
           <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${LETTERHEAD_IMAGE})`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "top center", zIndex: 1, opacity: 0.98 }} />
-          <div style={{ position: "relative", zIndex: 10, padding: "190px 38mm 100px 38mm", color: "#2c3e50" }}>
-            <h1 style={{ textAlign: "center", fontSize: "48px", fontWeight: "900", marginBottom: "70px", letterSpacing: "2px" }}>INVOICE</h1>
+          <div style={{ position: "relative", zIndex: 10, padding: "48mm 18mm 42mm", color: "#2c3e50" }}>
+            <h1 style={{ textAlign: "center", fontSize: "42px", fontWeight: "900", margin: "0 0 24px", letterSpacing: "2px" }}>INVOICE</h1>
 
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "50px", fontSize: "15px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "28px", fontSize: "15px" }}>
               <div>
                 <strong style={{ fontSize: "16px" }}>Bill To:</strong><br />
                 {clientName || "Client Name"}<br />
@@ -2297,33 +2295,33 @@ export default function App() {
             </div>
 
             {description && (
-              <div style={{ background: "rgba(255,255,255,0.96)", padding: "18px", borderRadius: "14px", marginBottom: "32px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", fontSize: "14.5px" }}>
+              <div style={{ background: "rgba(255,255,255,0.96)", padding: "14px", borderRadius: "12px", marginBottom: "20px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", fontSize: "14px" }}>
                 <strong>Project Description:</strong><br />{description}
               </div>
             )}
 
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "40px" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "22px" }}>
               <thead>
                 <tr style={{ background: "linear-gradient(90deg, #2c3e50, #34495e)", color: "#fff" }}>
-                  <th style={{ padding: "14px", textAlign: "left", borderRadius: "10px 0 0 10px" }}>Description</th>
-                  <th style={{ padding: "14px", textAlign: "right", borderRadius: "0 10px 10px 0" }}>Amount ({currency})</th>
+                  <th style={{ padding: "11px", textAlign: "left", borderRadius: "10px 0 0 10px" }}>Description</th>
+                  <th style={{ padding: "11px", textAlign: "right", borderRadius: "0 10px 10px 0" }}>Amount ({currency})</th>
                 </tr>
               </thead>
               <tbody>
                 {items.filter(i => i.desc || i.amt).map((item, idx) => (
                   <tr key={idx} style={{ background: idx % 2 === 0 ? "rgba(52,152,219,0.04)" : "transparent" }}>
-                    <td style={{ padding: "12px", borderBottom: "1px solid #eee" }}>{item.desc || "-"}</td>
-                    <td style={{ padding: "12px", textAlign: "right", borderBottom: "1px solid #eee" }}>{parseFloat(item.amt || 0).toFixed(2)}</td>
+                    <td style={{ padding: "9px 11px", borderBottom: "1px solid #eee" }}>{item.desc || "-"}</td>
+                    <td style={{ padding: "9px 11px", textAlign: "right", borderBottom: "1px solid #eee" }}>{parseFloat(item.amt || 0).toFixed(2)}</td>
                   </tr>
                 ))}
                 <tr style={{ fontWeight: "bold", borderTop: "3px double #2c3e50" }}>
-                  <td style={{ padding: "16px", fontSize: "18px" }}>TOTAL</td>
-                  <td style={{ padding: "16px", textAlign: "right", fontSize: "18px", color: "#27ae60" }}>{total.toFixed(2)}</td>
+                  <td style={{ padding: "12px", fontSize: "17px" }}>TOTAL</td>
+                  <td style={{ padding: "12px", textAlign: "right", fontSize: "17px", color: "#27ae60" }}>{total.toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
 
-            <div style={{ fontSize: "13px", lineHeight: "1.6", background: "rgba(255,255,255,0.95)", padding: "16px", borderRadius: "12px", boxShadow: "0 3px 12px rgba(0,0,0,0.08)" }}>
+            <div style={{ fontSize: "12px", lineHeight: "1.45", background: "rgba(255,255,255,0.95)", padding: "12px 14px", borderRadius: "12px", boxShadow: "0 3px 12px rgba(0,0,0,0.08)" }}>
               <strong>Payment Details:</strong><br />
               <pre style={{ margin: "8px 0 0", fontFamily: "inherit", whiteSpace: "pre-wrap" }}>{currentBankDetails || "Please select bank details"}</pre>
             </div>
