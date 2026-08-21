@@ -1915,12 +1915,15 @@ export default function App() {
   const [status, setStatus] = useState("Unpaid");
   const [date, setDate] = useState("2025-12-06");
   const [dueDate, setDueDate] = useState("");
+  const [showDueDate, setShowDueDate] = useState(false);
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [description, setDescription] = useState("");
   const [items, setItems] = useState([{ desc: "", amt: "" }]);
-  const [invoiceCounter, setInvoiceCounter] = useState(2);
   const [selectedLetterhead, setSelectedLetterhead] = useState("bwig-uk.png");
+  const [invoiceNumber, setInvoiceNumber] = useState(() => formatInvoiceNumber(2, "bwig-uk.png"));
+  const [transactionReference, setTransactionReference] = useState("");
+  const [showTransactionReference, setShowTransactionReference] = useState(false);
   const [selectedBank, setSelectedBank] = useState(BANK_OPTIONS[0].value);
   const [generatedBy, setGeneratedBy] = useState(GENERATED_BY_OPTIONS[0]);
   const [customBank, setCustomBank] = useState({ holder: "", accountNumber: "", bankName: "", iban: "", swift: "" });
@@ -1937,8 +1940,6 @@ export default function App() {
       : BANK_OPTIONS.find(b => b.value === selectedBank)?.details || BANK_OPTIONS[0].details;
 
   const total = items.reduce((sum, item) => sum + (parseFloat(item.amt) || 0), 0);
-  const invoiceNumber = formatInvoiceNumber(invoiceCounter, selectedLetterhead);
-
   const addItem = () => setItems([...items, { desc: "", amt: "" }]);
   const updateItem = (i, field, value) => {
     const newItems = [...items];
@@ -1963,6 +1964,10 @@ export default function App() {
   const downloadPDF = async () => {
     const element = invoiceRef.current;
     if (!element) return;
+    if (!invoiceNumber.trim()) {
+      alert("Please enter an invoice number.");
+      return;
+    }
 
     try {
       // 1. Capture invoice as image
@@ -2014,10 +2019,12 @@ export default function App() {
       URL.revokeObjectURL(url);
 
       // 7. Save to Firestore
-      const docId = `${clientName.replace(/\s+/g, "")}-${invoiceNumber}`;
+      const safeInvoiceNumber = invoiceNumber.trim().replace(/\//g, "-") || "invoice";
+      const docId = `${clientName.replace(/\s+/g, "") || "client"}-${safeInvoiceNumber}`;
       await setDoc(doc(db, "invoices", docId), {
-        clientName, clientEmail, invoiceNumber, items, total,
-        brand: selectedLetterhead, date, dueDate, currency, status,
+        clientName, clientEmail, invoiceNumber: invoiceNumber.trim(),
+        transactionReference: showTransactionReference ? transactionReference.trim() : "", items, total,
+        brand: selectedLetterhead, date, dueDate: showDueDate ? dueDate : "", currency, status,
         bankDetails: currentBankDetails,
         isCustomBank: selectedBank === "custom",
         customBankDetails: selectedBank === "custom" ? customBank : null,
@@ -2025,7 +2032,6 @@ export default function App() {
       });
 
       alert("Invoice downloaded & saved successfully!");
-      setInvoiceCounter(c => c + 1);
 
     } catch (error) {
       console.error("PDF generation failed:", error);
@@ -2045,8 +2051,9 @@ export default function App() {
           <div><strong>Bill To:</strong><br/>${invoice.clientName}<br/>${invoice.clientEmail || ""}</div>
           <div style="text-align:right">
             <div><strong>Invoice #:</strong> ${invoice.invoiceNumber}</div>
+            ${invoice.transactionReference ? `<div><strong>Transaction Ref #:</strong> ${invoice.transactionReference}</div>` : ""}
             <div><strong>Date:</strong> ${new Date(invoice.date).toLocaleDateString("en-GB")}</div>
-            <div><strong>Due Date:</strong> ${invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString("en-GB") : "Upon Receipt"}</div>
+            ${invoice.dueDate ? `<div><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}</div>` : ""}
           </div>
         </div>
         ${invoice.description ? `<div style="background:rgba(255,255,255,0.95);padding:15px;border-radius:10px;margin-bottom:30px"><strong>Project Description:</strong><br/>${invoice.description}</div>` : ""}
@@ -2126,10 +2133,41 @@ export default function App() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "20px" }}>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
-            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={inputStyle} placeholder="Due Date" />
+          <div style={{ display: "grid", gridTemplateColumns: showDueDate ? "1fr 1fr" : "1fr", gap: "16px", marginBottom: "12px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#2c3e50" }}>Invoice Date</label>
+              <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputStyle} />
+            </div>
+            {showDueDate && (
+              <div>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#2c3e50" }}>Due Date</label>
+                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={inputStyle} />
+              </div>
+            )}
           </div>
+
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px", fontWeight: "600", color: "#2c3e50", cursor: "pointer" }}>
+            <input type="checkbox" checked={showDueDate} onChange={e => setShowDueDate(e.target.checked)} />
+            Add Due Date
+          </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: showTransactionReference ? "1fr 1fr" : "1fr", gap: "16px", marginBottom: "12px" }}>
+            <div>
+              <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#2c3e50" }}>Invoice Number</label>
+              <input placeholder="Enter invoice number" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} style={inputStyle} />
+            </div>
+            {showTransactionReference && (
+              <div>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#2c3e50" }}>Transaction Reference Number</label>
+                <input placeholder="Enter transaction reference" value={transactionReference} onChange={e => setTransactionReference(e.target.value)} style={inputStyle} />
+              </div>
+            )}
+          </div>
+
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px", fontWeight: "600", color: "#2c3e50", cursor: "pointer" }}>
+            <input type="checkbox" checked={showTransactionReference} onChange={e => setShowTransactionReference(e.target.checked)} />
+            Add Transaction Reference Number
+          </label>
 
           <input placeholder="Client Name" value={clientName} onChange={e => setClientName(e.target.value)} style={{...inputStyle, marginBottom: "16px"}} />
           <input placeholder="Client Email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} style={{...inputStyle, marginBottom: "16px"}} />
@@ -2181,7 +2219,7 @@ export default function App() {
     
     {/* ✅ UPDATED SEARCH PLACEHOLDER */}
     <input
-      placeholder="Search by client, invoice or generated by..."
+      placeholder="Search by client, invoice, transaction reference or generated by..."
       value={searchQuery}
       onChange={e => setSearchQuery(e.target.value)}
       style={{...inputStyle, marginBottom: "12px"}}
@@ -2212,6 +2250,7 @@ export default function App() {
               return (
                 inv.clientName?.toLowerCase().includes(query) ||
                 inv.invoiceNumber?.toLowerCase().includes(query) ||
+                inv.transactionReference?.toLowerCase().includes(query) ||
                 inv.generatedBy?.toLowerCase().includes(query)
               );
             })
@@ -2289,8 +2328,9 @@ export default function App() {
               </div>
               <div style={{ textAlign: "right" }}>
                 <div><strong>Invoice #:</strong> {invoiceNumber}</div>
+                {showTransactionReference && transactionReference && <div><strong>Transaction Ref #:</strong> {transactionReference}</div>}
                 <div><strong>Date:</strong> {new Date(date).toLocaleDateString("en-GB")}</div>
-                <div><strong>Due Date:</strong> {dueDate ? new Date(dueDate).toLocaleDateString("en-GB") : "Upon Receipt"}</div>
+                {showDueDate && dueDate && <div><strong>Due Date:</strong> {new Date(dueDate).toLocaleDateString("en-GB")}</div>}
               </div>
             </div>
 
