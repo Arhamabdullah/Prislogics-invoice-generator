@@ -1867,9 +1867,12 @@ function formatInvoiceNumber(num, brand) {
 }
 
 const GENERATED_BY_OPTIONS = [
-  "Syed Ali Abbas", "Anas Arif","Yahya Sohail", 
-   "Faran Shahid", "Wasay Ali",
-  "Zia Khan", "Laraib Javaid", "Waqas Awan", "Basit Qureshi", "Syed Arham Abdullah"
+  "Basit Qureshi", "Waqas Awan"
+];
+
+const PROJECT_DELIVERY_PARAGRAPHS = [
+  "This project is delivered under a single agreement with Book Writing Inn Global Ltd., who remains responsible to you for the whole of it. Certain elements are performed by our partner company Prislogics Marketing Management FZE LLC under subcontract. Please pay only into the account shown on this invoice.",
+  "The total project value is allocated 50% to Book Writing Inn Global Ltd for the Writing Scope and 50% to Prislogics Marketing Management L.L.C S.O.C for the Marketing Scope, as agreed between the parties."
 ];
 
 const BANK_OPTIONS = [
@@ -1911,6 +1914,9 @@ const selectStyle = {
 };
 
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem("invoice-authenticated") === "true");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [status, setStatus] = useState("Unpaid");
   const [date, setDate] = useState("2025-12-06");
@@ -1930,6 +1936,7 @@ export default function App() {
   const [allInvoices, setAllInvoices] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBrand, setSortBrand] = useState("");
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
 
   const invoiceRef = useRef(null);
   const LETTERHEAD_IMAGE = `/Letterhead/${selectedLetterhead}`;
@@ -1958,6 +1965,35 @@ export default function App() {
       console.error(error);
       alert("Failed to fetch invoices.");
     }
+  };
+
+  const editInvoice = (invoice) => {
+    const matchingBank = BANK_OPTIONS.find(option => option.details === invoice.bankDetails);
+
+    setClientName(invoice.clientName || "");
+    setClientEmail(invoice.clientEmail || "");
+    setInvoiceNumber(invoice.invoiceNumber || "");
+    setTransactionReference(invoice.transactionReference || "");
+    setShowTransactionReference(Boolean(invoice.transactionReference));
+    setDate(invoice.date || "");
+    setDueDate(invoice.dueDate || "");
+    setShowDueDate(Boolean(invoice.dueDate));
+    setDescription(invoice.description || "");
+    setItems(invoice.items?.length ? invoice.items.map(item => ({ ...item })) : [{ desc: "", amt: "" }]);
+    setCurrency(invoice.currency || "USD");
+    setStatus(invoice.status || "Unpaid");
+    setSelectedLetterhead(invoice.brand || "bwig-uk.png");
+    setGeneratedBy(GENERATED_BY_OPTIONS.includes(invoice.generatedBy) ? invoice.generatedBy : GENERATED_BY_OPTIONS[0]);
+
+    if (invoice.isCustomBank) {
+      setSelectedBank("custom");
+      setCustomBank(invoice.customBankDetails || { holder: "", accountNumber: "", bankName: "", iban: "", swift: "" });
+    } else {
+      setSelectedBank(invoice.selectedBank || matchingBank?.value || BANK_OPTIONS[0].value);
+    }
+
+    setEditingInvoiceId(invoice.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // UPDATED downloadPDF — WITH PDF CONCATENATION
@@ -2020,18 +2056,21 @@ export default function App() {
 
       // 7. Save to Firestore
       const safeInvoiceNumber = invoiceNumber.trim().replace(/\//g, "-") || "invoice";
-      const docId = `${clientName.replace(/\s+/g, "") || "client"}-${safeInvoiceNumber}`;
+      const docId = editingInvoiceId || `${clientName.replace(/\s+/g, "") || "client"}-${safeInvoiceNumber}`;
       await setDoc(doc(db, "invoices", docId), {
         clientName, clientEmail, invoiceNumber: invoiceNumber.trim(),
         transactionReference: showTransactionReference ? transactionReference.trim() : "", items, total,
         brand: selectedLetterhead, date, dueDate: showDueDate ? dueDate : "", currency, status,
         bankDetails: currentBankDetails,
+        selectedBank,
         isCustomBank: selectedBank === "custom",
         customBankDetails: selectedBank === "custom" ? customBank : null,
         createdAt: new Date(), description, generatedBy,
       });
 
       alert("Invoice downloaded & saved successfully!");
+      setEditingInvoiceId(null);
+      if (allInvoices.length) await fetchInvoices();
 
     } catch (error) {
       console.error("PDF generation failed:", error);
@@ -2068,6 +2107,10 @@ export default function App() {
           </tbody>
         </table>
         <div style="font-size:12px;white-space:pre-line"><strong>Payment Details:</strong><br/>${invoice.bankDetails}</div>
+        <div style="font-size:9.5px;line-height:1.4;margin-top:14px;padding-top:10px;border-top:1px solid #dfe5eb;color:#34495e">
+          <strong style="font-size:10.5px;color:#2c3e50">Project delivery</strong>
+          ${PROJECT_DELIVERY_PARAGRAPHS.map(paragraph => `<p style="margin:5px 0 0">${paragraph}</p>`).join("")}
+        </div>
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;font-weight:900;color:${invoice.status==="Paid"?"rgba(40,167,69,0.2)":"rgba(220,53,69,0.2)"};pointer-events:none;z-index:5">${invoice.status.toUpperCase()}</div>
       </div>`;
     document.body.appendChild(element);
@@ -2079,8 +2122,47 @@ export default function App() {
     document.body.removeChild(element);
   };
 
+  const handleLogin = (event) => {
+    event.preventDefault();
+    if (loginPassword === "2024") {
+      sessionStorage.setItem("invoice-authenticated", "true");
+      setIsLoggedIn(true);
+      setLoginError("");
+      setLoginPassword("");
+    } else {
+      setLoginError("Incorrect password.");
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem("invoice-authenticated");
+    setIsLoggedIn(false);
+    setLoginPassword("");
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", background: "linear-gradient(135deg, #182848, #4b6cb7)", fontFamily: "Arial, sans-serif" }}>
+        <form onSubmit={handleLogin} style={{ width: "100%", maxWidth: "390px", padding: "38px", background: "white", borderRadius: "20px", boxShadow: "0 24px 70px rgba(0,0,0,0.3)" }}>
+          <h1 style={{ margin: "0 0 8px", color: "#2c3e50", fontSize: "28px", textAlign: "center" }}>Invoice Generator</h1>
+          <p style={{ margin: "0 0 28px", color: "#7f8c8d", textAlign: "center" }}>Sign in to continue</p>
+
+          <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", color: "#34495e" }}>Password</label>
+          <input autoFocus type="password" inputMode="numeric" pattern="[0-9]*" autoComplete="current-password" value={loginPassword} onChange={event => setLoginPassword(event.target.value.replace(/\D/g, ""))} style={{ ...inputStyle, boxSizing: "border-box" }} />
+
+          {loginError && <div role="alert" style={{ marginTop: "14px", padding: "10px 12px", color: "#c0392b", background: "#fdecea", borderRadius: "8px", fontSize: "14px" }}>{loginError}</div>}
+
+          <button type="submit" style={{ width: "100%", marginTop: "22px", padding: "14px", border: "none", borderRadius: "12px", background: "linear-gradient(90deg, #2c3e50, #3498db)", color: "white", fontSize: "16px", fontWeight: "700", cursor: "pointer" }}>Login</button>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: "30px 20px", background: "linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%)", minHeight: "100vh", fontFamily: "'Inter', 'Segoe UI', sans-serif" }}>
+      <div style={{ maxWidth: "1900px", margin: "0 auto 14px", textAlign: "right" }}>
+        <button onClick={handleLogout} style={{ padding: "9px 18px", border: "1px solid #cfd8e3", borderRadius: "9px", background: "white", color: "#34495e", fontWeight: "600", cursor: "pointer" }}>Log out</button>
+      </div>
       <div style={{ maxWidth: "1900px", margin: "0 auto", display: "flex", gap: "50px", flexWrap: "wrap", justifyContent: "center" }}>
 
         {/* LEFT PANEL – Form */}
@@ -2206,7 +2288,7 @@ export default function App() {
           </div>
 
           <button onClick={downloadPDF} style={{ width: "100%", padding: "18px", background: "linear-gradient(90deg, #27ae60, #1e8449)", color: "white", fontSize: "18px", fontWeight: "700", border: "none", borderRadius: "16px", cursor: "pointer", boxShadow: "0 10px 30px rgba(39,174,96,0.4)", transition: "transform 0.2s" }}>
-            Download PDF & Save Invoice
+            {editingInvoiceId ? "Download PDF & Update Invoice" : "Download PDF & Save Invoice"}
           </button>
 
           <button onClick={fetchInvoices} style={{ width: "100%", marginTop: "12px", padding: "14px", background: "#8e44ad", color: "white", border: "none", borderRadius: "12px", fontWeight: "600", cursor: "pointer", boxShadow: "0 6px 20px rgba(142,68,173,0.3)" }}>
@@ -2274,7 +2356,21 @@ export default function App() {
 
                 <td style={{ padding: "12px 10px", fontSize: "12px" }}>{inv.generatedBy || "-"}</td>
 
-                <td style={{ padding: "12px 10px" }}>
+                <td style={{ padding: "12px 10px", display: "flex", gap: "8px" }}>
+                  <button
+                    onClick={() => editInvoice(inv)}
+                    style={{
+                      padding: "8px 16px",
+                      background: "#f39c12",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "13px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => downloadOldInvoice(inv)}
                     style={{
@@ -2364,6 +2460,16 @@ export default function App() {
             <div style={{ fontSize: "12px", lineHeight: "1.45", background: "rgba(255,255,255,0.95)", padding: "12px 14px", borderRadius: "12px", boxShadow: "0 3px 12px rgba(0,0,0,0.08)" }}>
               <strong>Payment Details:</strong><br />
               <pre style={{ margin: "8px 0 0", fontFamily: "inherit", whiteSpace: "pre-wrap" }}>{currentBankDetails || "Please select bank details"}</pre>
+            </div>
+
+            <div style={{
+              marginTop: "14px", padding: "10px 2px 0", borderTop: "1px solid #dfe5eb",
+              fontSize: "9.5px", lineHeight: "1.4", color: "#34495e"
+            }}>
+              <strong style={{ fontSize: "10.5px", color: "#2c3e50" }}>Project delivery</strong>
+              {PROJECT_DELIVERY_PARAGRAPHS.map((paragraph, index) => (
+                <p key={index} style={{ margin: "5px 0 0" }}>{paragraph}</p>
+              ))}
             </div>
 
             <div style={{
