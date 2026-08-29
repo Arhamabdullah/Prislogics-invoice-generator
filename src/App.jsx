@@ -1871,7 +1871,7 @@ const GENERATED_BY_OPTIONS = [
 ];
 
 const PROJECT_DELIVERY_PARAGRAPHS = [
-  "This project is delivered under a single agreement with Book Writing Inn Global Ltd., who remains responsible to you for the whole of it. Certain elements are performed by our partner company Prislogics Marketing Management FZE LLC under subcontract. Please pay only into the account shown on this invoice.",
+  "This project is delivered under a single agreement with Book Writing Inn Global Ltd., who remains responsible to you for the whole of it. Certain elements are performed by our partner company Prislogics Marketing Management L.L.C S.O.C under subcontract. Please pay only into the account shown on this invoice.",
   "The total project value is allocated 50% to Book Writing Inn Global Ltd for the Writing Scope and 50% to Prislogics Marketing Management L.L.C S.O.C for the Marketing Scope, as agreed between the parties."
 ];
 
