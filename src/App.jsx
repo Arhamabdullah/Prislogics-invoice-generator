@@ -1856,6 +1856,7 @@ import { PDFDocument } from "pdf-lib";
 const BRAND_PREFIXES = {
   "bwig-uae.png": "BWI-INV-UAE",
   "bwig-uk.png": "BWI-INV-UK",
+  "bwi-uk.png": "BWI-INV-UK",
   "prislogics.jpg": "PRI-INV-UAE",
   "oxford.png": "OXF-INV-UK",
   "prislogics-bwig.png": "PBW-INV-UAE"
@@ -1888,6 +1889,7 @@ const BANK_OPTIONS = [
 const LETTERHEADS = [
   { value: "bwig-uae.png", label: "Book Writing Inn Global — UAE" },
   { value: "bwig-uk.png", label: "Book Writing Inn Global — UK" },
+  { value: "bwi-uk.png", label: "Book Writing Inn — UK" },
   { value: "prislogics.jpg", label: "Prislogics — Dubai & Karachi" },
   { value: "oxford.png", label: "Oxford Book Publishing" },
   { value: "prislogics-bwig.png", label: "Prislogics × Book Writing Inn Global" },
