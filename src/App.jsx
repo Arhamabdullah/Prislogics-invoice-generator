@@ -1948,7 +1948,13 @@ export default function App() {
       ? `Account holder: ${customBank.holder || "N/A"}\nAccount number: ${customBank.accountNumber || "N/A"}\nBank name: ${customBank.bankName || "N/A"}\nIBAN: ${customBank.iban || "N/A"}\nSWIFT/BIC: ${customBank.swift || "N/A"}`.trim()
       : BANK_OPTIONS.find(b => b.value === selectedBank)?.details || BANK_OPTIONS[0].details;
 
-  const total = items.reduce((sum, item) => sum + (parseFloat(item.amt) || 0), 0);
+  const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.amt) || 0), 0);
+  const vatAmount = subtotal * 0.05;
+  const total = subtotal + vatAmount;
+  const visibleItems = items.filter(item => item.desc || item.amt);
+  const invoiceTextLength = visibleItems.reduce((length, item) => length + (item.desc?.length || 0), 0) + description.length;
+  const compactInvoice = visibleItems.length >= 5 || invoiceTextLength > 240;
+  const veryCompactInvoice = visibleItems.length >= 7 || invoiceTextLength > 420;
   const addItem = () => setItems([...items, { desc: "", amt: "" }]);
   const updateItem = (i, field, value) => {
     const newItems = [...items];
@@ -2082,34 +2088,43 @@ export default function App() {
 
   // downloadOldInvoice remains unchanged
   const downloadOldInvoice = async (invoice) => {
+    const invoiceSubtotal = invoice.items.reduce((sum, item) => sum + (parseFloat(item.amt) || 0), 0);
+    const invoiceVatAmount = invoiceSubtotal * 0.05;
+    const invoiceTotal = invoiceSubtotal + invoiceVatAmount;
+    const invoiceTextLength = invoice.items.reduce((length, item) => length + (item.desc?.length || 0), 0) + (invoice.description?.length || 0);
+    const invoiceCompact = invoice.items.length >= 5 || invoiceTextLength > 240;
     const element = document.createElement("div");
-    element.style.cssText = "width:210mm;height:297mm;background:white;position:relative;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;padding:150px 38mm 100px 38mm;";
+    element.style.cssText = "width:210mm;height:297mm;box-sizing:border-box;background:white;position:relative;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;overflow:hidden;";
+    element.style.padding = invoiceCompact ? "130px 38mm 115px" : "150px 38mm 120px";
     element.innerHTML = `
       <div style="position:absolute;top:0;left:0;right:0;bottom:0;background-image:url(/Letterhead/${invoice.brand});background-size:contain;background-repeat:no-repeat;background-position:top center;z-index:1"></div>
       <div style="position:relative;z-index:10">
-        <h1 style="text-align:center;font-size:46px;font-weight:bold;margin-bottom:60px">INVOICE</h1>
-        <div style="display:flex;justify-content:space-between;margin-bottom:50px">
+        <h1 style="text-align:center;font-size:${invoiceCompact ? "34px" : "46px"};font-weight:bold;margin:0 0 ${invoiceCompact ? "18px" : "40px"}">INVOICE</h1>
+        <div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:${invoiceCompact ? "18px" : "35px"};font-size:${invoiceCompact ? "12px" : "14px"};line-height:1.35">
           <div><strong>Bill To:</strong><br/>${invoice.clientName}<br/>${invoice.clientEmail || ""}</div>
           <div style="text-align:right">
+            <div><strong>TRN:</strong> 105152896400003</div>
             <div><strong>Invoice #:</strong> ${invoice.invoiceNumber}</div>
             ${invoice.transactionReference ? `<div><strong>Transaction Ref #:</strong> ${invoice.transactionReference}</div>` : ""}
             <div><strong>Date:</strong> ${new Date(invoice.date).toLocaleDateString("en-GB")}</div>
             ${invoice.dueDate ? `<div><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}</div>` : ""}
           </div>
         </div>
-        ${invoice.description ? `<div style="background:rgba(255,255,255,0.95);padding:15px;border-radius:10px;margin-bottom:30px"><strong>Project Description:</strong><br/>${invoice.description}</div>` : ""}
-        <table style="width:100%;border-collapse:collapse;margin-bottom:40px">
+        ${invoice.description ? `<div style="background:rgba(255,255,255,0.95);padding:${invoiceCompact ? "8px 10px" : "15px"};border-radius:10px;margin-bottom:${invoiceCompact ? "10px" : "24px"};font-size:${invoiceCompact ? "11px" : "14px"};line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word"><strong>Project Description:</strong><br/>${invoice.description}</div>` : ""}
+        <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:${invoiceCompact ? "12px" : "30px"};font-size:${invoiceCompact ? "11px" : "14px"}">
           <thead><tr style="background:#2c3e50;color:#fff">
-            <th style="padding:10px;text-align:left">Description</th>
-            <th style="padding:10px;text-align:right">Amount (${invoice.currency})</th>
+            <th style="padding:${invoiceCompact ? "7px" : "10px"};text-align:left">Description</th>
+            <th style="width:28%;padding:${invoiceCompact ? "7px" : "10px"};text-align:right">Amount (${invoice.currency})</th>
           </tr></thead>
           <tbody>
-            ${invoice.items.map(i => `<tr><td style="padding:10px;border-bottom:1px solid #eee">${i.desc || "-"}</td><td style="padding:10px;text-align:right">${parseFloat(i.amt || 0).toFixed(2)}</td></tr>`).join("")}
-            <tr style="font-weight:bold;border-top:2px double #000"><td style="padding:12px">TOTAL</td><td style="padding:12px;text-align:right">${invoice.total.toFixed(2)}</td></tr>
+            ${invoice.items.map(i => `<tr><td style="padding:${invoiceCompact ? "5px 7px" : "10px"};border-bottom:1px solid #eee;line-height:1.25;overflow-wrap:anywhere;word-break:break-word;vertical-align:top">${i.desc || "-"}</td><td style="padding:${invoiceCompact ? "5px 7px" : "10px"};text-align:right;white-space:nowrap;vertical-align:top">${parseFloat(i.amt || 0).toFixed(2)}</td></tr>`).join("")}
+            <tr><td style="padding:10px;text-align:right">Subtotal</td><td style="padding:10px;text-align:right">${invoiceSubtotal.toFixed(2)}</td></tr>
+            <tr><td style="padding:10px;text-align:right">VAT (5%)</td><td style="padding:10px;text-align:right">${invoiceVatAmount.toFixed(2)}</td></tr>
+            <tr style="font-weight:bold;border-top:2px double #000"><td style="padding:12px">TOTAL (including VAT)</td><td style="padding:12px;text-align:right">${invoiceTotal.toFixed(2)}</td></tr>
           </tbody>
         </table>
-        <div style="font-size:12px;white-space:pre-line"><strong>Payment Details:</strong><br/>${invoice.bankDetails}</div>
-        <div style="font-size:9.5px;line-height:1.4;margin-top:14px;padding-top:10px;border-top:1px solid #dfe5eb;color:#34495e">
+        <div style="font-size:${invoiceCompact ? "9px" : "12px"};line-height:1.3;white-space:pre-line;overflow-wrap:anywhere"><strong>Payment Details:</strong><br/>${invoice.bankDetails}</div>
+        <div style="font-size:${invoiceCompact ? "7px" : "9.5px"};line-height:${invoiceCompact ? "1.25" : "1.4"};margin-top:${invoiceCompact ? "7px" : "14px"};padding-top:${invoiceCompact ? "5px" : "10px"};border-top:1px solid #dfe5eb;color:#34495e;overflow-wrap:anywhere">
           <strong style="font-size:10.5px;color:#2c3e50">Project delivery</strong>
           ${PROJECT_DELIVERY_PARAGRAPHS.map(paragraph => `<p style="margin:5px 0 0">${paragraph}</p>`).join("")}
         </div>
@@ -2415,16 +2430,17 @@ export default function App() {
 }}>
 
           <div style={{ position: "absolute", inset: 0, backgroundImage: `url(${LETTERHEAD_IMAGE})`, backgroundSize: "contain", backgroundRepeat: "no-repeat", backgroundPosition: "top center", zIndex: 1, opacity: 0.98 }} />
-          <div style={{ position: "relative", zIndex: 10, padding: "48mm 18mm 42mm", color: "#2c3e50" }}>
-            <h1 style={{ textAlign: "center", fontSize: "42px", fontWeight: "900", margin: "0 0 24px", letterSpacing: "2px" }}>INVOICE</h1>
+          <div style={{ position: "relative", zIndex: 10, padding: `${compactInvoice ? "45mm" : "48mm"} 18mm 46mm`, color: "#2c3e50" }}>
+            <h1 style={{ textAlign: "center", fontSize: compactInvoice ? "34px" : "42px", fontWeight: "900", margin: `0 0 ${compactInvoice ? "12px" : "24px"}`, letterSpacing: "2px" }}>INVOICE</h1>
 
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "28px", fontSize: "15px" }}>
-              <div>
-                <strong style={{ fontSize: "16px" }}>Bill To:</strong><br />
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "20px", marginBottom: compactInvoice ? "14px" : "28px", fontSize: compactInvoice ? "13px" : "15px", lineHeight: "1.35" }}>
+              <div style={{ minWidth: 0, overflowWrap: "anywhere" }}>
+                <strong style={{ fontSize: compactInvoice ? "14px" : "16px" }}>Bill To:</strong><br />
                 {clientName || "Client Name"}<br />
                 {clientEmail || "client@example.com"}
               </div>
-              <div style={{ textAlign: "right" }}>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <div><strong>TRN:</strong> 105152896400003</div>
                 <div><strong>Invoice #:</strong> {invoiceNumber}</div>
                 {showTransactionReference && transactionReference && <div><strong>Transaction Ref #:</strong> {transactionReference}</div>}
                 <div><strong>Date:</strong> {new Date(date).toLocaleDateString("en-GB")}</div>
@@ -2433,44 +2449,52 @@ export default function App() {
             </div>
 
             {description && (
-              <div style={{ background: "rgba(255,255,255,0.96)", padding: "14px", borderRadius: "12px", marginBottom: "20px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", fontSize: "14px" }}>
+              <div style={{ background: "rgba(255,255,255,0.96)", padding: compactInvoice ? "8px 10px" : "14px", borderRadius: "12px", marginBottom: compactInvoice ? "10px" : "20px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", fontSize: compactInvoice ? "11px" : "14px", lineHeight: "1.35", whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>
                 <strong>Project Description:</strong><br />{description}
               </div>
             )}
 
-            <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "22px" }}>
+            <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", marginBottom: compactInvoice ? "10px" : "22px", fontSize: compactInvoice ? "12px" : "inherit" }}>
               <thead>
                 <tr style={{ background: "linear-gradient(90deg, #2c3e50, #34495e)", color: "#fff" }}>
-                  <th style={{ padding: "11px", textAlign: "left", borderRadius: "10px 0 0 10px" }}>Description</th>
-                  <th style={{ padding: "11px", textAlign: "right", borderRadius: "0 10px 10px 0" }}>Amount ({currency})</th>
+                  <th style={{ padding: compactInvoice ? "7px 9px" : "11px", textAlign: "left", borderRadius: "10px 0 0 10px" }}>Description</th>
+                  <th style={{ width: "28%", padding: compactInvoice ? "7px 9px" : "11px", textAlign: "right", borderRadius: "0 10px 10px 0" }}>Amount ({currency})</th>
                 </tr>
               </thead>
               <tbody>
-                {items.filter(i => i.desc || i.amt).map((item, idx) => (
+                {visibleItems.map((item, idx) => (
                   <tr key={idx} style={{ background: idx % 2 === 0 ? "rgba(52,152,219,0.04)" : "transparent" }}>
-                    <td style={{ padding: "9px 11px", borderBottom: "1px solid #eee" }}>{item.desc || "-"}</td>
-                    <td style={{ padding: "9px 11px", textAlign: "right", borderBottom: "1px solid #eee" }}>{parseFloat(item.amt || 0).toFixed(2)}</td>
+                    <td style={{ padding: compactInvoice ? "5px 9px" : "9px 11px", borderBottom: "1px solid #eee", lineHeight: "1.25", overflowWrap: "anywhere", wordBreak: "break-word", verticalAlign: "top" }}>{item.desc || "-"}</td>
+                    <td style={{ padding: compactInvoice ? "5px 9px" : "9px 11px", textAlign: "right", borderBottom: "1px solid #eee", whiteSpace: "nowrap", verticalAlign: "top" }}>{parseFloat(item.amt || 0).toFixed(2)}</td>
                   </tr>
                 ))}
+                <tr>
+                  <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>Subtotal</td>
+                  <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>{subtotal.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>VAT (5%)</td>
+                  <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>{vatAmount.toFixed(2)}</td>
+                </tr>
                 <tr style={{ fontWeight: "bold", borderTop: "3px double #2c3e50" }}>
-                  <td style={{ padding: "12px", fontSize: "17px" }}>TOTAL</td>
-                  <td style={{ padding: "12px", textAlign: "right", fontSize: "17px", color: "#27ae60" }}>{total.toFixed(2)}</td>
+                  <td style={{ padding: compactInvoice ? "7px 9px" : "12px", fontSize: compactInvoice ? "14px" : "17px" }}>TOTAL (including VAT)</td>
+                  <td style={{ padding: compactInvoice ? "7px 9px" : "12px", textAlign: "right", fontSize: compactInvoice ? "14px" : "17px", color: "#27ae60", whiteSpace: "nowrap" }}>{total.toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
 
-            <div style={{ fontSize: "12px", lineHeight: "1.45", background: "rgba(255,255,255,0.95)", padding: "12px 14px", borderRadius: "12px", boxShadow: "0 3px 12px rgba(0,0,0,0.08)" }}>
+            <div style={{ fontSize: compactInvoice ? "10px" : "12px", lineHeight: compactInvoice ? "1.3" : "1.45", background: "rgba(255,255,255,0.95)", padding: compactInvoice ? "8px 10px" : "12px 14px", borderRadius: "12px", boxShadow: "0 3px 12px rgba(0,0,0,0.08)", overflowWrap: "anywhere" }}>
               <strong>Payment Details:</strong><br />
-              <pre style={{ margin: "8px 0 0", fontFamily: "inherit", whiteSpace: "pre-wrap" }}>{currentBankDetails || "Please select bank details"}</pre>
+              <pre style={{ margin: compactInvoice ? "4px 0 0" : "8px 0 0", fontFamily: "inherit", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{currentBankDetails || "Please select bank details"}</pre>
             </div>
 
             <div style={{
-              marginTop: "14px", padding: "10px 2px 0", borderTop: "1px solid #dfe5eb",
-              fontSize: "9.5px", lineHeight: "1.4", color: "#34495e"
+              marginTop: compactInvoice ? "7px" : "14px", padding: compactInvoice ? "6px 2px 0" : "10px 2px 0", borderTop: "1px solid #dfe5eb",
+              fontSize: veryCompactInvoice ? "7px" : compactInvoice ? "8px" : "9.5px", lineHeight: compactInvoice ? "1.25" : "1.4", color: "#34495e", overflowWrap: "anywhere"
             }}>
-              <strong style={{ fontSize: "10.5px", color: "#2c3e50" }}>Project delivery</strong>
+              <strong style={{ fontSize: compactInvoice ? "9px" : "10.5px", color: "#2c3e50" }}>Project delivery</strong>
               {PROJECT_DELIVERY_PARAGRAPHS.map((paragraph, index) => (
-                <p key={index} style={{ margin: "5px 0 0" }}>{paragraph}</p>
+                <p key={index} style={{ margin: compactInvoice ? "3px 0 0" : "5px 0 0" }}>{paragraph}</p>
               ))}
             </div>
 
