@@ -1927,6 +1927,9 @@ export default function App() {
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [description, setDescription] = useState("");
+  const [includeProjectDescription, setIncludeProjectDescription] = useState(false);
+  const [includeProjectDelivery, setIncludeProjectDelivery] = useState(true);
+  const [includeVat, setIncludeVat] = useState(true);
   const [items, setItems] = useState([{ desc: "", amt: "" }]);
   const [selectedLetterhead, setSelectedLetterhead] = useState("bwig-uk.png");
   const [invoiceNumber, setInvoiceNumber] = useState(() => formatInvoiceNumber(2, "bwig-uk.png"));
@@ -1949,10 +1952,10 @@ export default function App() {
       : BANK_OPTIONS.find(b => b.value === selectedBank)?.details || BANK_OPTIONS[0].details;
 
   const subtotal = items.reduce((sum, item) => sum + (parseFloat(item.amt) || 0), 0);
-  const vatAmount = subtotal * 0.05;
+  const vatAmount = includeVat ? subtotal * 0.05 : 0;
   const total = subtotal + vatAmount;
   const visibleItems = items.filter(item => item.desc || item.amt);
-  const invoiceTextLength = visibleItems.reduce((length, item) => length + (item.desc?.length || 0), 0) + description.length;
+  const invoiceTextLength = visibleItems.reduce((length, item) => length + (item.desc?.length || 0), 0) + (includeProjectDescription ? description.length : 0);
   const compactInvoice = visibleItems.length >= 5 || invoiceTextLength > 240;
   const veryCompactInvoice = visibleItems.length >= 7 || invoiceTextLength > 420;
   const addItem = () => setItems([...items, { desc: "", amt: "" }]);
@@ -1987,6 +1990,9 @@ export default function App() {
     setDueDate(invoice.dueDate || "");
     setShowDueDate(Boolean(invoice.dueDate));
     setDescription(invoice.description || "");
+    setIncludeProjectDescription(invoice.includeProjectDescription ?? Boolean(invoice.description));
+    setIncludeProjectDelivery(invoice.includeProjectDelivery ?? true);
+    setIncludeVat(invoice.includeVat ?? true);
     setItems(invoice.items?.length ? invoice.items.map(item => ({ ...item })) : [{ desc: "", amt: "" }]);
     setCurrency(invoice.currency || "USD");
     setStatus(invoice.status || "Unpaid");
@@ -2073,7 +2079,7 @@ export default function App() {
         selectedBank,
         isCustomBank: selectedBank === "custom",
         customBankDetails: selectedBank === "custom" ? customBank : null,
-        createdAt: new Date(), description, generatedBy,
+        createdAt: new Date(), description, includeProjectDescription, includeProjectDelivery, includeVat, generatedBy,
       });
 
       alert("Invoice downloaded & saved successfully!");
@@ -2089,9 +2095,11 @@ export default function App() {
   // downloadOldInvoice remains unchanged
   const downloadOldInvoice = async (invoice) => {
     const invoiceSubtotal = invoice.items.reduce((sum, item) => sum + (parseFloat(item.amt) || 0), 0);
-    const invoiceVatAmount = invoiceSubtotal * 0.05;
+    const invoiceIncludesVat = invoice.includeVat ?? true;
+    const invoiceShowsDescription = invoice.includeProjectDescription ?? Boolean(invoice.description);
+    const invoiceVatAmount = invoiceIncludesVat ? invoiceSubtotal * 0.05 : 0;
     const invoiceTotal = invoiceSubtotal + invoiceVatAmount;
-    const invoiceTextLength = invoice.items.reduce((length, item) => length + (item.desc?.length || 0), 0) + (invoice.description?.length || 0);
+    const invoiceTextLength = invoice.items.reduce((length, item) => length + (item.desc?.length || 0), 0) + (invoiceShowsDescription ? (invoice.description?.length || 0) : 0);
     const invoiceCompact = invoice.items.length >= 5 || invoiceTextLength > 240;
     const element = document.createElement("div");
     element.style.cssText = "width:210mm;height:297mm;box-sizing:border-box;background:white;position:relative;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;overflow:hidden;";
@@ -2110,7 +2118,7 @@ export default function App() {
             ${invoice.dueDate ? `<div><strong>Due Date:</strong> ${new Date(invoice.dueDate).toLocaleDateString("en-GB")}</div>` : ""}
           </div>
         </div>
-        ${invoice.description ? `<div style="background:rgba(255,255,255,0.95);padding:${invoiceCompact ? "8px 10px" : "15px"};border-radius:10px;margin-bottom:${invoiceCompact ? "10px" : "24px"};font-size:${invoiceCompact ? "11px" : "14px"};line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word"><strong>Project Description:</strong><br/>${invoice.description}</div>` : ""}
+        ${invoiceShowsDescription && invoice.description ? `<div style="background:rgba(255,255,255,0.95);padding:${invoiceCompact ? "8px 10px" : "15px"};border-radius:10px;margin-bottom:${invoiceCompact ? "10px" : "24px"};font-size:${invoiceCompact ? "11px" : "14px"};line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word"><strong>Project Description:</strong><br/>${invoice.description}</div>` : ""}
         <table style="width:100%;table-layout:fixed;border-collapse:collapse;margin-bottom:${invoiceCompact ? "12px" : "30px"};font-size:${invoiceCompact ? "11px" : "14px"}">
           <thead><tr style="background:#2c3e50;color:#fff">
             <th style="padding:${invoiceCompact ? "7px" : "10px"};text-align:left">Description</th>
@@ -2119,15 +2127,15 @@ export default function App() {
           <tbody>
             ${invoice.items.map(i => `<tr><td style="padding:${invoiceCompact ? "5px 7px" : "10px"};border-bottom:1px solid #eee;line-height:1.25;overflow-wrap:anywhere;word-break:break-word;vertical-align:top">${i.desc || "-"}</td><td style="padding:${invoiceCompact ? "5px 7px" : "10px"};text-align:right;white-space:nowrap;vertical-align:top">${parseFloat(i.amt || 0).toFixed(2)}</td></tr>`).join("")}
             <tr><td style="padding:10px;text-align:right">Subtotal</td><td style="padding:10px;text-align:right">${invoiceSubtotal.toFixed(2)}</td></tr>
-            <tr><td style="padding:10px;text-align:right">VAT (5%)</td><td style="padding:10px;text-align:right">${invoiceVatAmount.toFixed(2)}</td></tr>
-            <tr style="font-weight:bold;border-top:2px double #000"><td style="padding:12px">TOTAL (including VAT)</td><td style="padding:12px;text-align:right">${invoiceTotal.toFixed(2)}</td></tr>
+            ${invoiceIncludesVat ? `<tr><td style="padding:10px;text-align:right">VAT (5%)</td><td style="padding:10px;text-align:right">${invoiceVatAmount.toFixed(2)}</td></tr>` : ""}
+            <tr style="font-weight:bold;border-top:2px double #000"><td style="padding:12px">${invoiceIncludesVat ? "TOTAL (including VAT)" : "TOTAL"}</td><td style="padding:12px;text-align:right">${invoiceTotal.toFixed(2)}</td></tr>
           </tbody>
         </table>
         <div style="font-size:${invoiceCompact ? "9px" : "12px"};line-height:1.3;white-space:pre-line;overflow-wrap:anywhere"><strong>Payment Details:</strong><br/>${invoice.bankDetails}</div>
-        <div style="font-size:${invoiceCompact ? "7px" : "9.5px"};line-height:${invoiceCompact ? "1.25" : "1.4"};margin-top:${invoiceCompact ? "7px" : "14px"};padding-top:${invoiceCompact ? "5px" : "10px"};border-top:1px solid #dfe5eb;color:#34495e;overflow-wrap:anywhere">
+        ${invoice.includeProjectDelivery !== false ? `<div style="font-size:${invoiceCompact ? "7px" : "9.5px"};line-height:${invoiceCompact ? "1.25" : "1.4"};margin-top:${invoiceCompact ? "7px" : "14px"};padding-top:${invoiceCompact ? "5px" : "10px"};border-top:1px solid #dfe5eb;color:#34495e;overflow-wrap:anywhere">
           <strong style="font-size:10.5px;color:#2c3e50">Project delivery</strong>
           ${PROJECT_DELIVERY_PARAGRAPHS.map(paragraph => `<p style="margin:5px 0 0">${paragraph}</p>`).join("")}
-        </div>
+        </div>` : ""}
         <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:120px;font-weight:900;color:${invoice.status==="Paid"?"rgba(40,167,69,0.2)":"rgba(220,53,69,0.2)"};pointer-events:none;z-index:5">${invoice.status.toUpperCase()}</div>
       </div>`;
     document.body.appendChild(element);
@@ -2270,7 +2278,18 @@ export default function App() {
 
           <input placeholder="Client Name" value={clientName} onChange={e => setClientName(e.target.value)} style={{...inputStyle, marginBottom: "16px"}} />
           <input placeholder="Client Email" value={clientEmail} onChange={e => setClientEmail(e.target.value)} style={{...inputStyle, marginBottom: "16px"}} />
-          <textarea placeholder="Project Description (optional)" value={description} onChange={e => setDescription(e.target.value)} style={{...inputStyle, minHeight: "100px", resize: "vertical", marginBottom: "24px"}} rows={3} />
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px", fontWeight: "600", color: "#2c3e50", cursor: "pointer" }}>
+            <input type="checkbox" checked={includeProjectDescription} onChange={e => setIncludeProjectDescription(e.target.checked)} />
+            Add Project Description
+          </label>
+          {includeProjectDescription && (
+            <textarea placeholder="Project Description" value={description} onChange={e => setDescription(e.target.value)} style={{...inputStyle, minHeight: "100px", resize: "vertical", marginBottom: "24px"}} rows={3} />
+          )}
+
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "24px", fontWeight: "600", color: "#2c3e50", cursor: "pointer" }}>
+            <input type="checkbox" checked={includeProjectDelivery} onChange={e => setIncludeProjectDelivery(e.target.checked)} />
+            Add Project Delivery
+          </label>
 
           <strong style={{ display: "block", marginBottom: "12px", color: "#2c3e50" }}>Line Items</strong>
           {items.map((item, i) => (
@@ -2283,6 +2302,11 @@ export default function App() {
           <button onClick={addItem} style={{ width: "100%", padding: "14px", background: "linear-gradient(90deg, #3498db, #2980b9)", color: "white", border: "none", borderRadius: "12px", fontWeight: "600", margin: "16px 0 24px", cursor: "pointer", boxShadow: "0 6px 20px rgba(52,152,219,0.3)" }}>
             + Add Line Item
           </button>
+
+          <label style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "20px", fontWeight: "600", color: "#2c3e50", cursor: "pointer" }}>
+            <input type="checkbox" checked={includeVat} onChange={e => setIncludeVat(e.target.checked)} />
+            Add VAT (5%)
+          </label>
 
           <div style={{ display: "flex", gap: "20px", marginBottom: "20px", flexWrap: "wrap" }}>
             <div>
@@ -2448,7 +2472,7 @@ export default function App() {
               </div>
             </div>
 
-            {description && (
+            {includeProjectDescription && description && (
               <div style={{ background: "rgba(255,255,255,0.96)", padding: compactInvoice ? "8px 10px" : "14px", borderRadius: "12px", marginBottom: compactInvoice ? "10px" : "20px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", fontSize: compactInvoice ? "11px" : "14px", lineHeight: "1.35", whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>
                 <strong>Project Description:</strong><br />{description}
               </div>
@@ -2472,12 +2496,14 @@ export default function App() {
                   <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>Subtotal</td>
                   <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>{subtotal.toFixed(2)}</td>
                 </tr>
-                <tr>
-                  <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>VAT (5%)</td>
-                  <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>{vatAmount.toFixed(2)}</td>
-                </tr>
+                {includeVat && (
+                  <tr>
+                    <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>VAT (5%)</td>
+                    <td style={{ padding: compactInvoice ? "4px 9px" : "8px 12px", textAlign: "right" }}>{vatAmount.toFixed(2)}</td>
+                  </tr>
+                )}
                 <tr style={{ fontWeight: "bold", borderTop: "3px double #2c3e50" }}>
-                  <td style={{ padding: compactInvoice ? "7px 9px" : "12px", fontSize: compactInvoice ? "14px" : "17px" }}>TOTAL (including VAT)</td>
+                  <td style={{ padding: compactInvoice ? "7px 9px" : "12px", fontSize: compactInvoice ? "14px" : "17px" }}>{includeVat ? "TOTAL (including VAT)" : "TOTAL"}</td>
                   <td style={{ padding: compactInvoice ? "7px 9px" : "12px", textAlign: "right", fontSize: compactInvoice ? "14px" : "17px", color: "#27ae60", whiteSpace: "nowrap" }}>{total.toFixed(2)}</td>
                 </tr>
               </tbody>
@@ -2488,7 +2514,7 @@ export default function App() {
               <pre style={{ margin: compactInvoice ? "4px 0 0" : "8px 0 0", fontFamily: "inherit", whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{currentBankDetails || "Please select bank details"}</pre>
             </div>
 
-            <div style={{
+            {includeProjectDelivery && <div style={{
               marginTop: compactInvoice ? "7px" : "14px", padding: compactInvoice ? "6px 2px 0" : "10px 2px 0", borderTop: "1px solid #dfe5eb",
               fontSize: veryCompactInvoice ? "7px" : compactInvoice ? "8px" : "9.5px", lineHeight: compactInvoice ? "1.25" : "1.4", color: "#34495e", overflowWrap: "anywhere"
             }}>
@@ -2496,7 +2522,7 @@ export default function App() {
               {PROJECT_DELIVERY_PARAGRAPHS.map((paragraph, index) => (
                 <p key={index} style={{ margin: compactInvoice ? "3px 0 0" : "5px 0 0" }}>{paragraph}</p>
               ))}
-            </div>
+            </div>}
 
             <div style={{
               position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)",
